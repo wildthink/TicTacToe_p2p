@@ -241,6 +241,9 @@ extension GameViewController: PeerConnectionDelegate {
 	func connectionReady() {
 		// Ignore, since the game was already started in the main view controller.
 	}
+	func displayAdvertiseError(_ error: NWError) {
+		// Ignore, since the game is already in progress.
+	}
 
 	func connectionFailed() {
 		stopGame()

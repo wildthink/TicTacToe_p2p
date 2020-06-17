@@ -14,6 +14,7 @@ protocol PeerConnectionDelegate: class {
 	func connectionReady()
 	func connectionFailed()
 	func receivedMessage(content: Data?, message: NWProtocolFramer.Message)
+	func displayAdvertiseError(_ error: NWError)
 }
 
 class PeerConnection {

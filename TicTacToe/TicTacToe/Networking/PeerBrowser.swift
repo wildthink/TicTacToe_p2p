@@ -12,6 +12,7 @@ var sharedBrowser: PeerBrowser?
 // Update the UI when you receive new browser results.
 protocol PeerBrowserDelegate: class {
 	func refreshResults(results: Set<NWBrowser.Result>)
+	func displayBrowseError(_ error: NWError)
 }
 
 class PeerBrowser {
@@ -37,10 +38,22 @@ class PeerBrowser {
 		browser.stateUpdateHandler = { newState in
 			switch newState {
 			case .failed(let error):
-				// Restart the browser if it fails.
-				print("Browser failed with \(error), restarting")
-				browser.cancel()
-				self.startBrowsing()
+				// Restart the browser if it loses its connection
+				if error == NWError.dns(DNSServiceErrorType(kDNSServiceErr_DefunctConnection)) {
+					print("Browser failed with \(error), restarting")
+					browser.cancel()
+					self.startBrowsing()
+				} else {
+					print("Browser failed with \(error), stopping")
+					self.delegate?.displayBrowseError(error)
+					browser.cancel()
+				}
+			case .ready:
+				// Post initial results.
+				self.delegate?.refreshResults(results: browser.browseResults)
+			case .cancelled:
+				sharedBrowser = nil
+				self.delegate?.refreshResults(results: Set())
 			default:
 				break
 			}

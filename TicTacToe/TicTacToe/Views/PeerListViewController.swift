@@ -54,8 +54,6 @@ class PeerListViewController: UITableViewController {
 		passcodeLabel.text = passcode
 
 		tableView.register(UITableViewCell.self, forCellReuseIdentifier: "joinGameCell")
-
-		sharedBrowser = PeerBrowser(delegate: self)
 	}
 
 	func hostGameButton() {
@@ -122,8 +120,14 @@ class PeerListViewController: UITableViewController {
 		if currentSection == .join {
 			let cell = tableView.dequeueReusableCell(withIdentifier: "joinGameCell") ?? UITableViewCell(style: .default, reuseIdentifier: "joinGameCell")
 			// Display the results that we've found, if any. Otherwise, show "searching..."
-			if results.isEmpty {
+			if sharedBrowser == nil {
+				cell.textLabel?.text = "Search for games"
+				cell.textLabel?.textAlignment = .center
+				cell.textLabel?.textColor = .systemBlue
+			} else if results.isEmpty {
 				cell.textLabel?.text = "Searching for games..."
+				cell.textLabel?.textAlignment = .left
+				cell.textLabel?.textColor = .black
 			} else {
 				let peerEndpoint = results[indexPath.row].endpoint
 				if case let NWEndpoint.service(name: name, type: _, domain: _, interface: _) = peerEndpoint {
@@ -131,6 +135,8 @@ class PeerListViewController: UITableViewController {
 				} else {
 					cell.textLabel?.text = "Unknown Endpoint"
 				}
+				cell.textLabel?.textAlignment = .left
+				cell.textLabel?.textColor = .black
 			}
 			return cell
 		}
@@ -145,7 +151,9 @@ class PeerListViewController: UITableViewController {
 				hostGameButton()
 			}
 		case .join:
-			if !results.isEmpty {
+			if sharedBrowser == nil {
+				sharedBrowser = PeerBrowser(delegate: self)
+			} else if !results.isEmpty {
 				// Handle the user tapping on a discovered game
 				let result = results[indexPath.row]
 				performSegue(withIdentifier: "showPasscodeSegue", sender: result)
@@ -171,12 +179,36 @@ extension PeerListViewController: PeerBrowserDelegate {
 		}
 		tableView.reloadData()
 	}
+
+	// Show an error if peer discovery failed.
+	func displayBrowseError(_ error: NWError) {
+		var message = "Error \(error)"
+		if error == NWError.dns(DNSServiceErrorType(kDNSServiceErr_NoAuth)) {
+			message = "Not allowed to access the network"
+		}
+		let alert = UIAlertController(title: "Cannot discover other players",
+									  message: message, preferredStyle: .alert)
+		alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+		self.present(alert, animated: true)
+	}
 }
 
 extension PeerListViewController: PeerConnectionDelegate {
 	// When a connection becomes ready, move into game mode.
 	func connectionReady() {
 		navigationController?.performSegue(withIdentifier: "showGameSegue", sender: nil)
+	}
+
+	// When the a game cannot be advertised, show an error
+	func displayAdvertiseError(_ error: NWError) {
+		var message = "Error \(error)"
+		if error == NWError.dns(DNSServiceErrorType(kDNSServiceErr_NoAuth)) {
+			message = "Not allowed to access the network"
+		}
+		let alert = UIAlertController(title: "Cannot host game",
+									  message: message, preferredStyle: .alert)
+		alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+		self.present(alert, animated: true)
 	}
 
 	// Ignore connection failures and messages prior to starting a game.

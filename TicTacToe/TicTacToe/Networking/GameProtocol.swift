@@ -92,19 +92,14 @@ class GameProtocol: NWProtocolFramerImplementation {
 extension NWProtocolFramer.Message {
 	convenience init(gameMessageType: GameMessageType) {
 		self.init(definition: GameProtocol.definition)
-		self.gameMessageType = gameMessageType
+		self["GameMessageType"] = gameMessageType
 	}
 
 	var gameMessageType: GameMessageType {
-		get {
-			if let type = self["GameMessageType"] as? GameMessageType {
-				return type
-			} else {
-				return .invalid
-			}
-		}
-		set {
-			self["GameMessageType"] = newValue
+		if let type = self["GameMessageType"] as? GameMessageType {
+			return type
+		} else {
+			return .invalid
 		}
 	}
 }

@@ -41,9 +41,17 @@ class PeerListener {
 					print("Listener ready on \(String(describing: listener.port))")
 				case .failed(let error):
 					// If the listener fails, re-start.
-					print("Listener failed with \(error), restarting")
-					listener.cancel()
-					self.startListening()
+					if error == NWError.dns(DNSServiceErrorType(kDNSServiceErr_DefunctConnection)) {
+						print("Listener failed with \(error), restarting")
+						listener.cancel()
+						self.startListening()
+					} else {
+						print("Listener failed with \(error), stopping")
+						self.delegate?.displayAdvertiseError(error)
+						listener.cancel()
+					}
+				case .cancelled:
+					sharedListener = nil
 				default:
 					break
 				}
