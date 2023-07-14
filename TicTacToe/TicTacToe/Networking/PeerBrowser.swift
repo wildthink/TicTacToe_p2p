@@ -10,7 +10,7 @@ import Network
 var sharedBrowser: PeerBrowser?
 
 // Update the UI when you receive new browser results.
-protocol PeerBrowserDelegate: class {
+protocol PeerBrowserDelegate: AnyObject {
 	func refreshResults(results: Set<NWBrowser.Result>)
 	func displayBrowseError(_ error: NWError)
 }
